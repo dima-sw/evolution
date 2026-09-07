@@ -593,6 +593,90 @@ flowchart TD
 
 **Gli ordini sono influenza, non comandi**: i bisogni vitali vincono sempre.
 
+### 6.0 La dipendenza: come una legge morta è tornata a vivere
+
+Il motore sapeva fare la sottomissione — un forte con roba in mano prende un debole affamato — e su
+otto semi diversi non è mai successo: `costretti: 0`. Una legge scritta che non produceva niente.
+
+La causa non era quella che sembrava, e ci sono volute quattro misure per arrivarci.
+
+```
+   la condizione chiedeva:  fame > 0.7  &&  inventario vuoto  &&  poco coraggio  &&  più debole
+                            └────┬────┘      └──────┬───────┘
+                                 │                  └── uno STATO DI PASSAGGIO fra una raccolta
+                                 │                      e l'altra: la carestia non lo produce
+                                 │                      (misurato: 86 a mani vuote in abbondanza,
+                                 │                       52 in carestia — CALA)
+                                 └── un numero che non descriveva niente. E «nessuno ci arriva»
+                                     era falso: era un artefatto della fotografia finale — chi ha
+                                     fame o mangia o muore, quindi in un'istantanea non lo vedi
+                                     mai. Contando gli EPISODI: 140 a partita, e il massimo tocca 1,40
+```
+
+Adesso sono cinque relazioni fra due persone, e **un solo assoluto che non è inventato**:
+
+```js
+altro.inventory.size < npc.inventory.size   // ha meno di lui
+altro.fame > FAME_RECUPERO                  // il corpo non si sta più rimettendo  ← è del CORPO
+altro.fame > npc.fame                       // ha più fame: è LUI che può sfamarlo
+altro.forza < npc.forza                     // non può opporsi con la forza
+altro.coraggio < npc.aggressivita           // né con l'animo
+```
+
+`FAME_RECUPERO` non è una soglia scelta: è **il punto che `npc.js` usa già** per decidere quando la
+salute risale. Erano due numeri nudi dentro un `if` (`0.5` e `1.0`); ora hanno un nome in
+`params.js`, **fuori da `P`** perché non sono manopole da girare — sono com'è fatto il corpo.
+
+E la relazione stessa non esisteva. Il commento diceva «gli passa ciò che raccoglie e riceve di che
+sopravvivere» e «si libera se il padrone muore», e **nessuna delle tre cose accadeva**: il servo
+mangiava la propria roba, il padrone non riceveva niente, e un padrone morto teneva il suo servo per
+sempre. La porta era murata per costruzione — ci si liberava con `coraggio > 0.5`, e la
+sottomissione sceglie apposta chi ha poco coraggio.
+
+```
+   IL PATTO                              COME SE NE ESCE (misurato, e il conto quadra)
+   servo ──► dà ciò che ha ──► padrone   entrati 544 =
+   servo ◄── lo sfama, quanto              ribellati 250   (46%)  rancore > paura
+             gli conviene   ◄── padrone    ancora servi 235 (43%)
+             (empatia − avidità)           orfani 37        (7%)  il padrone è morto
+                                           morti 22         (4%)
+   malcontento: dare e non ricevere BRUCIA, ricevere CALMA
+```
+
+Ci si libera **quando il rancore supera la paura** — un confronto, ed è lo specchio esatto della
+cattura. E la servitù ora risponde alla fame del mondo: **17,1% della gente in abbondanza, 19,8% in
+carestia**. Vedi `banco/carestia.mjs` e `banco/perche_niente_servi.mjs`.
+
+### 6.05 Quando il motore smette di dire che cosa sono le cose
+
+`affordanceTotale` è **acceso**. Con quello, `classify()` — che dava un punteggio a ogni categoria
+nota e sceglieva la migliore — lascia il posto a `classifyCulturale()`, che non sa niente di Armi e
+Medicine: prende la **firma percettiva** di ciò che si ha davanti, la cerca nei generi che quel
+popolo ha già incontrato, e se non c'è ne crea uno nuovo con un nome nuovo.
+
+```
+   SPENTO                              ACCESO
+   attributi ──► classify()            attributi ──► firmaPercettiva()
+                 ├ Arma        0.72                   │
+                 ├ Medicina    0.31                   ▼
+                 ├ Veleno      0.12          il lessico di QUEL popolo
+                 └ Utensile    0.55          ├ "Dukaco"  (già vista 4 volte)
+                 → "Arma"                    ├ "Motapi"
+                                             └ (nuova) → "Guleze"
+   il motore sa che cos'è                    lo sa il popolo, e ogni popolo
+                                             a modo suo
+```
+
+La domanda che decide se è emergenza vera o categorie note travestite: **popoli diversi arrivano a
+nomi diversi, o convergono?** Misurato (`banco/affordanza.mjs`): dei **24 generi incontrati da più
+popoli, 24 su 24** hanno ricevuto nomi diversi da ognuno. Zero convergenze — una stessa materia
+risponde a otto nomi a seconda di chi la incontra.
+
+E non costa: **32,2 ms contro 37,0** per battito. Cercare un genere già percepito in una mappa è più
+economico che dare un punteggio a tutte le categorie note. Nel gioco il pannello dei mestieri dice
+`Maniko ×17 · Zununa ×16 · Rupedi ×12 …`, e nessuno di quei nomi — né le categorie che nominano —
+sta nel codice.
+
 ### 6.1 Le parole che il mondo non conosce
 
 Qui c'era scritto che non esisteva una lista bianca. Non era vero: `validaEditti` scartava in
@@ -838,6 +922,24 @@ esisteva, e sarei rimasto convinto di un rapporto causa-effetto che va nel verso
 ## 8. Le prestazioni
 
 Tutto misurato, mai indovinato.
+
+> **La cosa più grossa non era nel codice, era nella forma dei dati.** I campi delle persone
+> nascevano per strada — `_padrone` quando qualcuno veniva sottomesso, `casaMat` quando costruiva,
+> `_commemorato` quando moriva — e in V8 ogni aggiunta crea una **mappa nascosta** nuova. Misurato:
+> **1 345 persone, 966 mappe diverse**, e leggere una proprietà costava 164 nanosecondi invece di
+> quattro. Un punto del codice che vede più di quattro mappe smette di ottimizzare e torna a cercare
+> il campo ogni volta — quindi lo pagava *ogni ciclo del motore*.
+>
+> Dichiarandoli tutti nel costruttore, sempre nello stesso ordine (a `undefined`, cioè esattamente
+> ciò che il codice trovava prima), le mappe tornano **una sola**. Il battito da **1 701,6 a 301,1
+> ms** con i contatori del lavoro identici al millesimo, e moduli mai toccati scesi lo stesso:
+> emozioni −49%, umani −75%. Vedi `banco/forme.mjs` e `PRESTAZIONI.md` §6.4.
+>
+> Le altre due leve grosse sono la stessa idea in due forme: **non fare il lavoro di cui si può
+> dimostrare che non cambia il risultato.** Geometrica — si salta ogni cella che non possa
+> contenere un vicino migliore (−29% sulla costruzione dei legami, zero differenze su 170 193
+> archi). Semantica — chi cerca un indigente non guarda in faccia nessuno se il censimento per cella
+> dice che lì attorno non ce n'è (−93%, stesse identiche scelte).
 
 ```mermaid
 flowchart TD
@@ -1089,6 +1191,71 @@ era il mio controllo a guardare dalla parte sbagliata.)*
 
 ---
 
+## 8.5 La storia: come si ricorda un mondo
+
+Il motore sapeva dire com'è il mondo **adesso** e non sapeva dire com'era. `stats()` è una
+fotografia: ogni numero veniva calcolato, mostrato e buttato via.
+
+```
+   ogni 0,35 secondi di mondo
+   ┌──────────────────────────────────────────────────────────────┐
+   │  pop.stats()   ──►  il pannello di sinistra (i numeri di ora) │
+   │       │                                                      │
+   │       └────────►  storia.campiona()                          │
+   │                        │                                     │
+   │                        ▼                                     │
+   │              76 anelli Float32Array(4000)                    │
+   │              ┌─────────────────────────┐                     │
+   │              │ …│ │ │ │▓│▓│▓│▓│▓│▓│▓│ …│  n % 4000           │
+   │              └─────────────────────────┘                     │
+   │                        │                                     │
+   │        (solo se la scheda Storia è aperta)                   │
+   │                        ▼                                     │
+   │              grafici.disegna()  ──►  28 riquadri             │
+   │              (e solo quelli sotto gli occhi)                 │
+   └──────────────────────────────────────────────────────────────┘
+```
+
+**Non calcola niente di suo.** Si aggancia alla `stats()` che l'interfaccia già chiede: ricordare
+costa una scrittura per serie. Il registro gira **sempre**, anche a scheda chiusa — altrimenti si
+aprirebbe la storia e non ci sarebbe niente da vedere. Il disegno invece si fa solo a scheda aperta,
+ed è lì che sta il costo vero.
+
+**Un anello, non un elenco che cresce.** Una partita lunga farebbe milioni di campioni e un grafico
+non ne può mostrare più di qualche migliaio comunque: l'elenco che cresce sarebbe memoria buttata
+che prima o poi impianta la scheda. Quando l'anello è pieno ricomincia da capo e il più vecchio si
+perde. Costo fisso: **1,17 MB**.
+
+### Tre scelte che decidono che cosa si vede
+
+**Dei totali si mostra il RITMO.** «Sono nati in tutto 1 400» non dice niente; «nascono quanti ne
+muoiono» dice tutto. E il ritmo è diviso per il **tempo trascorso**, non per il numero di campioni:
+altrimenti dipenderebbe da ogni quanto campiona l'interfaccia, che è un dettaglio e non un fatto del
+mondo.
+
+**Sei figure non sono andamenti ma distribuzioni di adesso** — età, fame, agiatezza, lingua, sapere,
+salute. Perché *una media non è una società*: un popolo con metà gente sazia e metà che muore ha la
+stessa fame media di uno in cui stanno tutti così così, e sono due mondi diversi. La disuguaglianza
+si vede nella forma e in nessun altro posto. Ogni istogramma segna la **mediana**, che dice più della
+media quando la forma è storta.
+
+**Le ere sono segnate sull'asse** come linee verticali: un salto in un grafico senza il fatto che
+l'ha causato è solo una curva strana.
+
+### Quanto costa
+
+| | |
+|---|---|
+| registrare | una scrittura per serie, dentro una `stats()` già calcolata |
+| disegnare 28 riquadri | **0,2 ms per battito** (solo quelli visibili, `IntersectionObserver`) |
+| memoria | 1,17 MB, fissa |
+
+E con la storia aperta il canvas degli esseri è nascosto: prima ci si disegnavano sopra migliaia di
+persone per **108 ms a battito**, per pixel che nessuno vedeva. Adesso non si disegna, quindi
+**aprire la scheda rende la simulazione più veloce**.
+
+---
+
 ## 9. Riproducibilità
 
 Lo stesso seme dà **lo stesso identico mondo**, fino alla somma della fame di ogni persona.
@@ -1154,4 +1321,6 @@ partita», che per un mondo con dentro una mente è quanto di meglio si possa pr
 | `economy.js` | valore soggettivo, baratto, moneta emergente |
 | `entities.js` | gli NPC inventano categorie che il motore non conosce |
 | `orders.js` · `ai.js` | il capo, e l'obbedienza come influenza |
-| `render.js` · `main.js` | camera, LOD, branchi, i due menù |
+| `render.js` · `main.js` | camera, LOD, branchi, i due menù, le due schede |
+| `storia.js` | la memoria del mondo: settantasei serie in anelli a lunghezza fissa |
+| `grafici.js` | la storia disegnata: andamenti, composizioni, distribuzioni |

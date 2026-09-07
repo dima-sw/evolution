@@ -796,7 +796,13 @@ function updatePopStats() {
   riempi("istStats", [
     ["👑 Tributi", s.tributi || 0], ["🎁 Doni", s.doni || 0],
     ["🗡 Estorsioni", s.estorsioni || 0, s.estorsioni > 0 ? ROSSO : null],
-    ["⛓ Sottomessi", s.costretti || 0, s.costretti > 0 ? ROSSO : null],
+    // La servitù in quattro numeri invece che in uno. Il totale di sempre da solo non dice niente:
+    // un mondo con cinquecento sottomessi e cinquecento liberati è libero, uno con cinquecento
+    // sottomessi e nessuna uscita è un mondo di schiavi, e i due mostrano lo stesso numero.
+    ["⛓ Servi ORA", (s.servi || 0) + (s.vivi ? ` — ${((s.servi || 0) * 100 / s.vivi).toFixed(1)}% della gente` : ""),
+      s.servi > s.vivi * 0.25 ? ROSSO : s.servi > 0 ? GIALLO : null],
+    ["⛓ Sottomessi in tutto", s.costretti || 0],
+    ["✊ Come se ne esce", `ribellandosi ${s.liberatisi || 0} · per la morte del padrone ${s.orfaniDiPadrone || 0} · morendo ${s.mortiDaServo || 0}`, null, true],
     ["⚖️ Pene · processi", `${s.punizioni||0} · ${s.processi||0}`],
     ["Norma sul furto", pct(s.normaFurto)],
     ["🎓 Maestri", s.maestri || 0],

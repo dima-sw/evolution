@@ -2207,6 +2207,12 @@ libri: this.libri ? this.libri.length : 0, libriScritti: this.libriScritti || 0,
       falseCredenze: [...this.knowledge.beliefs.values()].filter((b) => b.falsaCredenza).length,
       tributi: this.tributi || 0, doni: this.doni || 0, estorsioni: this.estorsioni || 0,
       punizioni: this.punizioni || 0, processi: this.processi || 0, costretti: this.costretti || 0,
+      // LA SERVITU' NON E' UN NUMERO SOLO. `costretti` e' il totale di sempre, che cresce e basta:
+      // e' il meno utile dei quattro. Quello che dice com'e' il mondo ADESSO e' quanti servi ci
+      // sono in questo momento; quelli che dicono se la porta e' aperta sono le due uscite.
+      servi: this.npcs.reduce((q, n) => q + (n.vivo && n._padrone != null ? 1 : 0), 0),
+      liberatisi: this.liberatisi || 0, orfaniDiPadrone: this.orfaniDiPadrone || 0,
+      mortiDaServo: this.mortiDaServo || 0,
       normaFurto: this.norme ? this.norme.furto : 0, classi: this.classi || {},
       disuguaglianza: this.disuguaglianza || 0, maestri: this.insegnamentiMaestro || 0,
       miti: (this.miti || []).length, voci: (this.voci || []).length, calunnie: this.calunnie || 0,

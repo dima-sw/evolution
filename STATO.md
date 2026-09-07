@@ -140,6 +140,20 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **La storia ha la sua sonda** (`banco/prova_storia.mjs`). Avevo consegnato due moduli e settantasei
+  serie senza una sola prova, che è il debito peggiore possibile: un grafico sbagliato non sembra
+  rotto, sembra un fatto. Controlla l'anello (i vecchi si perdono, i superstiti restano in ordine),
+  che il «ritmo» sia una derivata sul **tempo** e non sui campioni, che nessuna serie produca valori
+  non finiti, e — con un `Proxy` che spia chi legge cosa — che **ogni serie legga campi che esistono
+  davvero**. Serviva perché una serie a zero può essere un fenomeno non ancora accaduto *o* un nome
+  scritto male, e dal valore le due cose sono indistinguibili: adesso la sonda dice quale delle due
+  (`credenti` è a zero perché vale davvero zero).
+
+- **La servitù nell'interfaccia, in quattro numeri invece che in uno**: servi *ora* (e la loro quota
+  sulla gente), sottomessi in tutto, e le tre uscite separate. Il totale cumulativo da solo non dice
+  niente — un mondo con mille sottomessi e mille liberati è libero, uno con mille sottomessi e
+  nessuna uscita è un mondo di schiavi, e mostravano lo stesso numero.
+
 - **LA STORIA: una seconda scheda accanto alla mappa.** La mappa dice *dov'è* il mondo; questa dice
   *da dove viene*, e sono due domande che non stanno bene nello stesso riquadro. Ventotto figure su
   settantasei grandezze registrate.
