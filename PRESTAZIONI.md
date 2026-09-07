@@ -80,20 +80,23 @@ potatura semantica, la forma unica, la servitù che funziona e `affordanceTotale
 
 | gente | bestie | totale | fauna | emozioni | umani | fazioni | cultura | società |
 |---|---|---|---|---|---|---|---|---|
-| 601 | 8 820 | **45,1 ms** | 8,7 | 7,7 | 20,5 | 5,5 | 0,8 | 1,2 |
-| 1 202 | 29 915 | **93,3 ms** | 35,2 | 31,6 | 19,7 | 3,9 | 1,0 | 1,5 |
-| 2 403 | 26 103 | **164,3 ms** | 64,4 | 54,7 | 28,8 | 9,7 | 2,9 | 3,1 |
-| 4 803 | 16 921 | **298,3 ms** | **143,3** | 58,9 | 54,6 | 24,2 | 8,8 | 7,6 |
+| 601 | 8 820 | **32,6 ms** | 6,7 | 5,8 | 15,1 | 3,4 | 0,6 | 0,8 |
+| 1 202 | 29 915 | **85,4 ms** | 31,8 | 29,5 | 18,5 | 3,2 | 0,8 | 1,3 |
+| 2 403 | 26 103 | **154,4 ms** | 57,8 | 52,0 | 28,1 | 9,9 | 2,8 | 3,3 |
+| 4 803 | 16 921 | **254,2 ms** | **112,9** | 52,9 | 51,0 | 21,6 | 8,1 | 7,0 |
+
+*(le stesse taglie prima della potatura della caccia: 45,1 · 93,3 · 164,3 · **298,3** ms, con la
+fauna a 143,3 — vedi §6.6)*
 
 | modulo | esponente | lettura |
 |---|---|---|
 | cultura | ^1,59 | il più ripido, ma piccolo in assoluto |
 | **fazioni** | **^1,31** | era ^1,63 |
 | **società** | **^1,30** | era ^1,72, ed era il peggiore |
-| **fauna** | **^1,16** | **il più caro in assoluto: 143 ms, il 48% del battito** |
+| **fauna** | **^0,97** | **il più caro in assoluto: 113 ms, il 44% del battito** |
 | umani | ^0,92 | |
 | emozioni | ^0,11 | |
-| **TOTALE** | **^0,86** | **sublineare** — era ^1,06 |
+| **TOTALE** | **^0,72** | **sublineare** — era ^1,06 |
 
 **Il collo di bottiglia è cambiato.** Prima erano `fazioni` e `umani` (202 e 198 ms); adesso è la
 **fauna**, da sola quasi metà del battito, e i due vecchi colpevoli sono scesi a 24 e 55. Chi vuole
@@ -953,6 +956,67 @@ forzato è scritto nel motore ma non emerge in nessun mondo misurato — la cond
 (qualcuno senza niente, molto affamato, poco coraggioso, più debole, e con accanto un dominatore
 ricco) non si presenta mai insieme. È una legge scritta che non produce niente, e va guardata:
 o la condizione è troppo stretta, o quel mondo non produce abbastanza miseria concentrata.
+
+---
+
+## 6.6 La fauna: quattro ipotesi sbagliate prima di quella giusta
+
+Il profilo diceva una cosa che non poteva essere vera: **il costo per bestia passava da 0,87 a 8,80
+µs mentre le bestie DIMINUIVANO** (26 103 → 16 921). Quel che cresceva nel frattempo era la gente.
+Quindi dentro il passo di una bestia c'era qualcosa che scalava con gli umani.
+
+Vale la pena elencare le ipotesi cadute, perché ognuna sembrava ovvia e ognuna è costata una misura:
+
+| ipotesi | misura | esito |
+|---|---|---|
+| i cadaveri riempiono l'array | 0,4–0,7%, e a fine partita **zero** | ✗ |
+| le chiavi-stringa della griglia | costano uguale a qualunque popolazione | ✗ |
+| il cibo non si trova più e si ricerca | le ricerche falliscono lo **0%** | ✗ |
+| troppi branchi, ognuno con la sua ricerca | 3,8–6,5 ms su 126 | ✗ |
+| **la caccia rastrella un mondo dove le prede si sono diradate** | **472 168 bestie guardate a battito, 73% a vuoto** | ✓ |
+
+E il difetto era già stato **diagnosticato e curato in una sola direzione**. Il commento nel codice
+spiega perché la FUGA debba cercare su una griglia di soli predatori: *«l'uscita anticipata scatta
+solo quando si trovano, e in un mondo di erbivori non si trovano»*. La CACCIA è la stessa cosa
+nell'altro verso, ed era rimasta scoperta.
+
+### Il rimedio: la potatura per TAGLIA
+
+Una preda dev'essere più piccola di chi la insegue. Quindi si tiene, per ogni cella, **la bestia più
+piccola** (separando terra e acqua), e una cella la cui più piccola è già troppo grande non può
+contenere prede: si salta senza guardare nessuno.
+
+```js
+const limite = { min: a.dna.aquatic ? grid.minA : grid.minT,
+                 soglia: a.dna.taglia * (0.55 + a.dna.carnivoria * 0.7) };
+```
+
+**È esatta.** Il margine più largo che `puoPredare` possa concedere è `0.55 + carnivoria * 0.7`
+(l'altro ramo, `0.45`, è sempre più stretto); se la più piccola della cella non sta sotto
+`taglia × quel margine`, lì dentro non c'è preda per **nessun** valore di margine — e `ok()` le
+scarterebbe comunque tutte poche righe più sotto. È la stessa idea della potatura geometrica delle
+fazioni, spostata dalla distanza alla **taglia**.
+
+| | prima | dopo | |
+|---|---|---|---|
+| passo delle bestie (9 442 bestie, 8 548 persone) | 71,8 ms | **52,8 ms** | **−26%** |
+| celle rastrellate dalla caccia | 30 902 | 19 820 | −36% |
+| bestie guardate in faccia | 472 168 | 398 218 | −16% |
+
+**Impronta identica su 6 semi** (`banco/multiseme.mjs` contro una copia dei sorgenti con *solo*
+questa modifica tolta).
+
+### Quel che resta lì, per chi continua
+
+Si salta il 36% delle celle ma solo il 16% delle bestie guardate: **il limite è debole perché basta
+una bestia piccola in una cella per doverla guardare tutta**. Due strade, in ordine di resa attesa:
+
+1. **Separare la griglia per ambiente.** `puoPredare` scarta subito chi non vive nello stesso
+   elemento (`a.dna.aquatic !== b.dna.aquatic`), e adesso quel controllo viene fatto una bestia alla
+   volta. Due griglie invece di una lo farebbero una volta sola per interrogazione.
+2. **Ordinare ogni cella per taglia.** Con la lista ordinata si smette di scorrere appena si supera
+   la soglia, invece di guardare fino in fondo. Costa un ordinamento per cella a ogni ricostruzione
+   (una ogni quattro battiti) e va misurato: potrebbe non valere.
 
 ---
 

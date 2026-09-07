@@ -139,11 +139,23 @@ function wanderOn(pop, a, speed, ok) {
 const GRID_CELL = 12;
 function buildGrid(list, ammesso) {
   const g = new Map();
+  // LA BESTIA PIU' PICCOLA DI OGNI CELLA, separata fra terra e acqua.
+  //
+  // Serve a chi caccia. Una preda dev'essere PIU' PICCOLA di chi la insegue
+  // (`b.taglia < a.taglia * margine`), quindi una cella la cui bestia piu' piccola e' gia' troppo
+  // grande non puo' contenere prede — e si puo' saltare senza guardare in faccia nessuno.
+  // Costa un confronto per bestia mentre la griglia si costruisce, e la griglia si costruisce una
+  // volta ogni quattro battiti.
+  const minT = new Map(), minA = new Map();
   for (const o of list) {
     if (!o.vivo || (ammesso && !ammesso(o))) continue;
     const k = ((o.x / GRID_CELL) | 0) + "," + ((o.y / GRID_CELL) | 0);
     let a = g.get(k); if (!a) { a = []; g.set(k, a); } a.push(o);
+    const m = o.dna.aquatic ? minA : minT;
+    const cur = m.get(k);
+    if (cur === undefined || o.dna.taglia < cur) m.set(k, o.dna.taglia);
   }
+  g.minT = minT; g.minA = minA;
   return g;
 }
 // Cerca la creatura più vicina che soddisfa un PREDICATO: è così che preda e minaccia diventano
@@ -154,7 +166,15 @@ function buildGrid(list, ammesso) {
 // Nessun animale fa cosi': si accorge di quello che ha addosso, e quando l'ha trovato smette
 // di cercare. Qui si va per anelli concentrici e ci si ferma appena da piu' lontano non puo'
 // piu' arrivare niente di meglio. Chi viene trovato e' esattamente lo stesso di prima.
-function gridNearest(grid, x, y, R, ok) {
+// I CONTATORI DEL LAVORO, spenti finche' nessuno li appende. Servono a distinguere «e' lento» da
+// «guarda troppa roba per trovare niente», che sono due problemi diversi con due rimedi diversi.
+let _lav = null;
+export function contaLavoroFauna(o) { _lav = o; }
+
+// `limite` e' facoltativo: {min: Map cella->taglia piu' piccola, soglia}. Quando c'e', una cella
+// la cui bestia piu' piccola non e' sotto soglia viene saltata SENZA guardarci dentro. E' esatta,
+// non approssimata: `ok` scarterebbe comunque ognuno di quelli, poche righe piu' sotto.
+function gridNearest(grid, x, y, R, ok, limite) {
   const R2 = R * R, cx = (x / GRID_CELL) | 0, cy = (y / GRID_CELL) | 0, span = Math.ceil(R / GRID_CELL);
   let best = null, bd = R2;
   for (let r = 0; r <= span; r++) {
@@ -162,7 +182,15 @@ function gridNearest(grid, x, y, R, ok) {
     if (best) { const minFuori = (r - 1) * GRID_CELL; if (minFuori > 0 && minFuori * minFuori >= bd) break; }
     for (let gy = cy - r; gy <= cy + r; gy++) for (let gx = cx - r; gx <= cx + r; gx++) {
       if (r > 0 && Math.abs(gx - cx) !== r && Math.abs(gy - cy) !== r) continue;   // solo il bordo
-      const arr = grid.get(gx + "," + gy); if (!arr) continue;
+      const kc = gx + "," + gy;
+      if (limite) { const mt = limite.min.get(kc); if (mt === undefined || !(mt < limite.soglia)) continue; }
+      const arr = grid.get(kc);
+      if (_lav) {
+        _lav.celle++; if (arr) _lav.esaminate += arr.length;
+        if (_lav.fase === "caccia") { _lav.celleCaccia++; if (arr) _lav.esamCaccia += arr.length; }
+        else if (_lav.fase === "fuga") { _lav.celleFuga++; if (arr) _lav.esamFuga += arr.length; }
+      }
+      if (!arr) continue;
       for (const o of arr) {
         if (!o.vivo || (ok && !ok(o))) continue;
         const d2 = (o.x - x) ** 2 + (o.y - y) ** 2;
@@ -216,7 +244,9 @@ function stepCreatura(pop, a, dt, grid, branco) {
     // Chi sta per conto suo deve guardarsi da sé — ma anche lui può guardare solo dove i predatori
     // possono essere. È la stessa cura del branco: la griglia dei soli predatori è un sovrainsieme
     // di chi può mangiarlo, quindi la risposta è identica e le celle sono quasi vuote.
+    if (_lav) { _lav.fase = "fuga"; _lav.chiamateFuga++; }
     minaccia = gridNearest(pop._gridPredatori || grid, a.x, a.y, raggioAllarme, (o) => puoPredare(o, a));
+    if (_lav) _lav.fase = null;
   }
   if (minaccia) {
     moveOn(pop, a, 2 * a.x - minaccia.a.x, 2 * a.y - minaccia.a.y,
@@ -229,7 +259,24 @@ function stepCreatura(pop, a, dt, grid, branco) {
     if (caccia(a)) {
       const reach = 1.3 + a.dna.taglia * 0.6 + a.dna.aggressivita * 0.3;
       const R = 10 + ((a.dna.vista || 0.5) + (a.dna.olfatto || 0.5)) * 9;
-      const preda = gridNearest(grid, a.x, a.y, R, (o) => puoPredare(a, o));
+      if (_lav) { _lav.fase = "caccia"; _lav.chiamateCaccia++; }
+      // LE CELLE DOVE NON C'E' NIENTE DI ABBASTANZA PICCOLO NON SI GUARDANO.
+      //
+      // Il codice qui accanto aveva gia' curato la FUGA — cercare i predatori su una griglia di
+      // soli predatori invece che su tutte le bestie — e aveva lasciato scoperta la CACCIA, che e'
+      // la stessa cosa nell'altro verso. Misurato: 1 339 ricerche a battito che guardano in faccia
+      // 472 168 bestie, e nel 73% dei casi per non trovare niente. E' il costo che faceva sembrare
+      // che una bestia costasse dieci volte tanto quando la gente cresce: non era la bestia, era
+      // il predatore che rastrella un mondo dove le prede si sono diradate.
+      //
+      // Il margine piu' largo che `puoPredare` possa concedere a questo cacciatore e'
+      // `0.55 + carnivoria * 0.7` (l'altro ramo, 0.45, e' sempre piu' stretto). Se la bestia piu'
+      // piccola di una cella non e' sotto `taglia * quel margine`, li' dentro non c'e' preda
+      // possibile per NESSUN valore di margine — e la cella si salta.
+      const limite = { min: a.dna.aquatic ? grid.minA : grid.minT,
+                       soglia: a.dna.taglia * (0.55 + a.dna.carnivoria * 0.7) };
+      const preda = gridNearest(grid, a.x, a.y, R, (o) => puoPredare(a, o), limite.min ? limite : null);
+      if (_lav) { _lav.fase = null; if (!preda) _lav.cacciaAVuoto++; }
       if (preda && (preda.a.dna.mimetismo || 0) <= pop.rng() * 1.4) {
         if (preda.d2 < reach * reach) {
           const pd = preda.a.dna;
@@ -500,7 +547,14 @@ export function stepEcosystem(pop, dt) {
   const TURNI_FAUNA = turniFauna();
   pop._turnoFauna = ((pop._turnoFauna || 0) + 1) % TURNI_FAUNA;
   // A inizio giro si rifà la mappa di chi sta dove; per i tre battiti seguenti si riusa.
+  const _cr = pop._cronoFauna || (pop._cronoFauna = { bestie: 0, caccia: 0, malattia: 0 });
   if (pop._turnoFauna === 0 || !pop._gridFauna) {
+    // TRE COSE, DI NUOVO, SOTTO UN NOME SOLO. Dentro «bestie» c'erano le due griglie (che scalano
+    // col numero di bestie), il censimento dei branchi (che scala col numero di BRANCHI, ed e' una
+    // cosa diversa: piu' le bestie si diradano piu' branchi distinti ci sono) e il passo di
+    // ognuna. Il totale diceva che una bestia costava dieci volte tanto: non era vero di nessuna
+    // delle tre.
+    const _tg = performance.now();
     pop._gridFauna = buildGrid(pop.creature);
     // UNA GRIGLIA DEI SOLI PREDATORI. Cercare i tre pericoli più vicini costava carissimo per una
     // ragione che la misura ha svelato: l'uscita anticipata scatta solo QUANDO SI TROVANO, e in un
@@ -510,7 +564,12 @@ export function stepEcosystem(pop, dt) {
     // Su una griglia che contiene solo chi può predare quelle stesse celle sono quasi vuote, e la
     // risposta è **identica**: non si approssima niente, si smette solo di guardare le prede.
     pop._gridPredatori = buildGrid(pop.creature, (o) => o.dna.carnivoria >= 0.35);
+    _cr.griglie = (_cr.griglie || 0) + (performance.now() - _tg);
+    const _tb = performance.now();
     pop._branchiFauna = pericoliPerBranco(pop, pop._gridPredatori);
+    _cr.branchi = (_cr.branchi || 0) + (performance.now() - _tb);
+    _cr.nBranchi = pop._branchiFauna.size;
+    _cr.nBestie = pop._gridFauna.size;
   }
   const grid = pop._gridFauna, branchi = pop._branchiFauna;
   const CELLA = 9;
@@ -526,7 +585,7 @@ export function stepEcosystem(pop, dt) {
   // (che scalano col numero di bestie), la caccia degli umani e il contagio (che scalano con la
   // GENTE). Leggendo un totale solo si finisce per credere che la fauna sia esplosa quando invece
   // sono cresciuti i cacciatori. Costa sei letture d'orologio a battito: si tengono separate.
-  const _c = pop._cronoFauna || (pop._cronoFauna = { bestie: 0, caccia: 0, malattia: 0 });
+  const _c = _cr;
   _c.bestie += (performance.now() - _t0);
   let _t = performance.now();
   humansHunt(pop, dt, grid);

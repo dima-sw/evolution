@@ -140,6 +140,18 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **La caccia non rastrella più un mondo vuoto.** Il profilo diceva che una bestia costava dieci
+  volte tanto quando la gente cresce — mentre le bestie *diminuivano*. Quattro ipotesi ovvie sono
+  cadute misurandole (i cadaveri: 0,4%; le chiavi-stringa: costano uguale; il cibo introvabile: 0%
+  di ricerche a vuoto; troppi branchi: 4 ms su 126). La quinta era vera: **la caccia guardava in
+  faccia 472 168 bestie a battito, e nel 73% dei casi per non trovare niente**. Ed era un difetto
+  già diagnosticato e curato *in una sola direzione*: il commento nel codice spiega perché la fuga
+  debba cercare su una griglia di soli predatori, e la caccia — la stessa cosa nell'altro verso —
+  era rimasta scoperta. Ora si tiene la bestia più piccola di ogni cella e si salta ogni cella che
+  non possa contenere prede: **−26% sul passo delle bestie**, battito intero da 298,3 a **254,2 ms**,
+  impronta identica su sei semi. La lezione di metodo: «126 ms» non dice cosa fare, «472 168 bestie
+  guardate per niente» sì. **Contare il lavoro, non solo i millisecondi.**
+
 - **La storia ha la sua sonda** (`banco/prova_storia.mjs`). Avevo consegnato due moduli e settantasei
   serie senza una sola prova, che è il debito peggiore possibile: un grafico sbagliato non sembra
   rotto, sembra un fatto. Controlla l'anello (i vecchi si perdono, i superstiti restano in ordine),
@@ -181,10 +193,10 @@ Quattro livelli soltanto si possono scrivere a mano:
   occhi (`IntersectionObserver`), e il registro gira sempre, anche a scheda chiusa: altrimenti si
   aprirebbe la storia e non ci sarebbe niente da vedere.
 
-- **Prestazioni, rimisurate daccapo sul motore di oggi** (`banco/scala.mjs`): 45,1 ms a 600
-  persone, 93,3 a 1 200, 164,3 a 2 400, **298,3 a 4 800**. Il totale scala **sublineare** (^0,86,
+- **Prestazioni, rimisurate daccapo sul motore di oggi** (`banco/scala.mjs`): 32,6 ms a 600
+  persone, 85,4 a 1 200, 154,4 a 2 400, **254,2 a 4 800**. Il totale scala **sublineare** (^0,72,
   era ^1,06), e i due vecchi colpevoli sono rientrati: fazioni da ^1,63 a ^1,31, società da ^1,72 a
-  ^1,30. **Il collo di bottiglia è cambiato**: adesso è la fauna, 143 ms a 4 800 persone, quasi metà
+  ^1,30. **Il collo di bottiglia è cambiato**: adesso è la fauna, 113 ms a 4 800 persone, il 44%
   del battito — e il suo costo segue le bestie, non la gente. Chi vuole guadagnare tempo da qui in
   avanti deve guardare lì.
 
