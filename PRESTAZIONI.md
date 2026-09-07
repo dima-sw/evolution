@@ -73,9 +73,44 @@ Banco headless, stesse condizioni, mappa 320×320, 58% acqua. Tempo per battito.
 > Ci sono cascato due volte in una sera: ho annunciato un −20% che era rumore, e ho misurato come
 > «più lenta» una versione che non lo era.
 
-### ✅ DOVE SIAMO ADESSO (stesso seme, stesse taglie, e persino lo stesso numero di bestie)
+### ✅ DOVE SIAMO ADESSO — rimisurato daccapo
 
-| gente | bestie | totale **prima** | totale **adesso** | |
+Queste sono le uniche misure prese sul motore **come è oggi**: con la potatura geometrica, la
+potatura semantica, la forma unica, la servitù che funziona e `affordanceTotale` acceso.
+
+| gente | bestie | totale | fauna | emozioni | umani | fazioni | cultura | società |
+|---|---|---|---|---|---|---|---|---|
+| 601 | 8 820 | **45,1 ms** | 8,7 | 7,7 | 20,5 | 5,5 | 0,8 | 1,2 |
+| 1 202 | 29 915 | **93,3 ms** | 35,2 | 31,6 | 19,7 | 3,9 | 1,0 | 1,5 |
+| 2 403 | 26 103 | **164,3 ms** | 64,4 | 54,7 | 28,8 | 9,7 | 2,9 | 3,1 |
+| 4 803 | 16 921 | **298,3 ms** | **143,3** | 58,9 | 54,6 | 24,2 | 8,8 | 7,6 |
+
+| modulo | esponente | lettura |
+|---|---|---|
+| cultura | ^1,59 | il più ripido, ma piccolo in assoluto |
+| **fazioni** | **^1,31** | era ^1,63 |
+| **società** | **^1,30** | era ^1,72, ed era il peggiore |
+| **fauna** | **^1,16** | **il più caro in assoluto: 143 ms, il 48% del battito** |
+| umani | ^0,92 | |
+| emozioni | ^0,11 | |
+| **TOTALE** | **^0,86** | **sublineare** — era ^1,06 |
+
+**Il collo di bottiglia è cambiato.** Prima erano `fazioni` e `umani` (202 e 198 ms); adesso è la
+**fauna**, da sola quasi metà del battito, e i due vecchi colpevoli sono scesi a 24 e 55. Chi vuole
+guadagnare tempo da qui in avanti deve guardare lì — con l'avvertenza di §5, che la fauna è già
+stata ottimizzata parecchio e che il suo costo segue **le bestie, non la gente**.
+
+> ⚠️ **Non confrontare questa tabella con quelle vecchie per dedurne un guadagno.** Fra l'una e le
+> altre il MONDO è cambiato due volte (la servitù che prima non scattava mai, e `affordanceTotale`
+> acceso), e cambia anche quante bestie ci sono a parità di gente — 29 915 contro 27 659 a 1 200
+> persone. Sono misure di due mondi diversi. I guadagni veri stanno in §6.3, §6.4 e §6.5, dove il
+> mondo era tenuto fermo apposta.
+
+### Le misure di un tempo, per riferimento storico
+
+Il primo confronto dopo la forma unica, quando il mondo era ancora quello vecchio:
+
+| gente | bestie | totale **prima** | totale **allora** | |
 |---|---|---|---|---|
 | 600 | 8 913 | 59,2 ms | **29,8 ms** | −50% |
 | 1 201 | 27 659 | 162,2 ms | **81,0 ms** | −50% |

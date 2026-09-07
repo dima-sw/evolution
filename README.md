@@ -23,8 +23,13 @@ Se sì, è una legge e si può scrivere. Se no, è una categoria e va resa **pos
 
 Mestieri, popoli e confini, lingue che divergono fino all'incomprensione, norme che nascono da chi
 punisce e si sfaldano se nessuno lo fa, miti attorno ai morti notevoli, voci vere e false che
-rovinano reputazioni, ceti, carestie, guerre, parole coniate dalla gente per cose che il motore non
-sa nominare.
+rovinano reputazioni, ceti, carestie, guerre, servitù che cresce quando il cibo scarseggia.
+
+E i nomi. Con `affordanceTotale` — acceso di default — il motore smette di dire *che cosa* sia una
+cosa: ogni popolo raggruppa ciò che incontra come lo percepisce lui, e lo battezza con una parola
+sua. Misurato: dei 24 generi incontrati da più popoli, **24 su 24** hanno ricevuto nomi diversi da
+ognuno. Il pannello dei mestieri non dice «agricoltore ×39»: dice `Maniko ×17 · Zununa ×16 ·
+Rupedi ×12 …`, e nessuno di quei nomi sta nel codice.
 
 ## Riproducibilità
 

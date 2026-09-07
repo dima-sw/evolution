@@ -140,6 +140,13 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **Prestazioni, rimisurate daccapo sul motore di oggi** (`banco/scala.mjs`): 45,1 ms a 600
+  persone, 93,3 a 1 200, 164,3 a 2 400, **298,3 a 4 800**. Il totale scala **sublineare** (^0,86,
+  era ^1,06), e i due vecchi colpevoli sono rientrati: fazioni da ^1,63 a ^1,31, società da ^1,72 a
+  ^1,30. **Il collo di bottiglia è cambiato**: adesso è la fauna, 143 ms a 4 800 persone, quasi metà
+  del battito — e il suo costo segue le bestie, non la gente. Chi vuole guadagnare tempo da qui in
+  avanti deve guardare lì.
+
 - **`affordanceTotale` è ACCESO di default: il motore ha smesso di dire che cosa siano le cose.**
   Era implementato da tempo ma spento, e non era mai stato provato per una partita intera. Misurato
   (`banco/affordanza.mjs`, stesso seme, due partite):
