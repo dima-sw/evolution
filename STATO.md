@@ -140,6 +140,33 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **LA STORIA: una seconda scheda accanto alla mappa.** La mappa dice *dov'è* il mondo; questa dice
+  *da dove viene*, e sono due domande che non stanno bene nello stesso riquadro. Ventotto figure su
+  settantasei grandezze registrate.
+
+  Tre cose non ovvie, che hanno deciso com'è fatta:
+  - **Gli andamenti richiedevano una memoria che non c'era.** `stats()` è una fotografia: ogni
+    numero veniva calcolato, mostrato e buttato via. `storia.js` si aggancia alla stessa `stats()`
+    che l'interfaccia già chiede ogni 0,35 secondi di mondo — quindi non calcola niente di suo — e
+    la conserva in **anelli a lunghezza fissa**: 1,17 MB in tutto, e la memoria non cresce mai.
+  - **Dei totali si mostra il RITMO, non il totale.** «Sono nati in tutto 1 400» non dice niente;
+    «nascono quanti ne muoiono» dice tutto. E il ritmo è diviso per il tempo passato, altrimenti
+    dipenderebbe da ogni quanto campiona l'interfaccia, che è un dettaglio e non un fatto del mondo.
+  - **Non tutto ciò che conta è un andamento.** Sei figure sono **distribuzioni di adesso** — età,
+    fame, agiatezza, lingua, sapere, salute — perché una media non è una società: un popolo con metà
+    gente sazia e metà che muore ha la stessa fame media di uno in cui stanno tutti così così. La
+    disuguaglianza si vede nella forma, e in nessun altro posto. Ogni istogramma segna la mediana.
+
+  E **le ere sono segnate sull'asse** come linee verticali: un salto in un grafico senza il fatto
+  che l'ha causato è solo una curva strana.
+
+  Il costo, misurato nel pannello delle prestazioni (che ora ha una riga in più apposta):
+  **0,2 ms per battito**. E siccome con la storia aperta il canvas degli esseri è nascosto — e
+  disegnarci sopra migliaia di persone costava **108 ms a battito per pixel che nessuno vedeva** —
+  aprire la scheda fa andare la simulazione **più veloce**. Si disegnano solo i riquadri sotto gli
+  occhi (`IntersectionObserver`), e il registro gira sempre, anche a scheda chiusa: altrimenti si
+  aprirebbe la storia e non ci sarebbe niente da vedere.
+
 - **Prestazioni, rimisurate daccapo sul motore di oggi** (`banco/scala.mjs`): 45,1 ms a 600
   persone, 93,3 a 1 200, 164,3 a 2 400, **298,3 a 4 800**. Il totale scala **sublineare** (^0,86,
   era ^1,06), e i due vecchi colpevoli sono rientrati: fazioni da ^1,63 a ^1,31, società da ^1,72 a

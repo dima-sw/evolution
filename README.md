@@ -31,6 +31,20 @@ sua. Misurato: dei 24 generi incontrati da più popoli, **24 su 24** hanno ricev
 ognuno. Il pannello dei mestieri non dice «agricoltore ×39»: dice `Maniko ×17 · Zununa ×16 ·
 Rupedi ×12 …`, e nessuno di quei nomi sta nel codice.
 
+## Le due schede
+
+**Mappa** — dov'è il mondo. **Storia** — da dove viene: ventotto figure su settantasei grandezze
+registrate mentre la partita va avanti, con le ere segnate sull'asse.
+
+Dei totali che crescono e basta (nascite, battaglie, sottomissioni) si mostra il **ritmo**, non il
+totale: «sono nati in tutto 1 400» non dice niente, «nascono quanti ne muoiono» dice tutto. E sei
+figure non sono andamenti ma **distribuzioni di adesso** — età, fame, agiatezza, lingua — perché una
+media non è una società: un popolo con metà gente sazia e metà che muore ha la stessa fame media di
+uno in cui stanno tutti così così.
+
+Costa 0,2 ms per battito, e con la storia aperta la mappa non si disegna: aprire la scheda rende la
+simulazione più veloce.
+
 ## Riproducibilità
 
 Lo stesso seme dà lo stesso mondo, fino all'ultima cifra decimale — è il presupposto di ogni misura.

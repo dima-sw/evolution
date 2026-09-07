@@ -24,6 +24,8 @@ import { gradoDi, perizia } from "./skill.js";
 import { stepEntities, entitaStats } from "./entities.js";
 import { P, DEF, SCHEMA, resetParams, paramModificati } from "./params.js";
 import { makeRng } from "./rng.js";
+import { Storia } from "./storia.js";
+import { Grafici } from "./grafici.js";
 
 const $ = (id) => document.getElementById(id);
 const status = (msg) => { $("status").textContent = msg; };
@@ -33,6 +35,11 @@ const renderer = new WorldRenderer(canvas);
 const agentsRenderer = new AgentsRenderer($("agents"), null);
 const registry = new MaterialRegistry();
 let population = null;
+// LA MEMORIA DEL MONDO. Vive accanto alla popolazione e muore con lei: un mondo nuovo e' una
+// storia nuova, e mescolare le due farebbe grafici che raccontano una partita che non e' mai stata.
+let storia = null;
+let grafici = null;
+let schedaAttiva = "mappa";
 renderer.agents = $("agents");          // il renderer dimensiona anche il livello delle creature
 agentsRenderer.bind(renderer);          // stessa camera per mondo e creature
 renderer.onResize = () => agentsRenderer.draw();
@@ -78,6 +85,7 @@ function regenerate() {
     // Nuovo mondo -> nuova conoscenza collettiva e nuova popolazione.
     knowledge = new KnowledgeBase();
     population = new Population(world, registry, knowledge);
+    storia = new Storia();
     renderer.pop = population; // per la vista inquinamento
     population.spawn(parseInt($("popStart").value, 10));
     spawnAnimals(population, parseInt($("herbStart").value, 10), parseInt($("predStart").value, 10));
@@ -647,6 +655,16 @@ function updatePopStats() {
   if (!population) return;
   const s = population.stats();
   const p = population;
+  // UN CAMPIONE DI STORIA, qui e non altrove: `stats()` e' appena stata calcolata, quindi
+  // ricordarla costa una scrittura per serie. Si registra SEMPRE, anche a scheda chiusa —
+  // altrimenti si aprirebbe la storia e non ci sarebbe niente da vedere. Il DISEGNO invece si fa
+  // solo se la scheda e' aperta: e' li' che sta il costo vero.
+  if (storia) storia.campiona(p, s);
+  if (grafici && schedaAttiva === "storia") {
+    const _tG = performance.now();
+    grafici.disegna();
+    _perf.graf += performance.now() - _tG;
+  }
 
   // — POPOLAZIONE —
   riempi("popStats", [
@@ -760,14 +778,15 @@ function updatePopStats() {
 
   const _pf = perfLeggi();
   if (_pf) {
-    const tot = _pf.sim + _pf.dis + _pf.mappa;
+    const tot = _pf.sim + _pf.dis + _pf.mappa + _pf.graf;
     riempi("perfStats", [
       ["Simulare un battito", _pf.sim.toFixed(1) + " ms", tot > 33 && _pf.sim > _pf.dis ? GIALLO : null],
       ["Disegnare gli esseri", _pf.dis.toFixed(1) + " ms", tot > 33 && _pf.dis > _pf.sim ? GIALLO : null],
       ["Ridisegnare la mappa", _pf.mappa.toFixed(1) + " ms"],
+      _pf.graf > 0.01 ? ["Disegnare i grafici", _pf.graf.toFixed(1) + " ms"] : null,
       ["In tutto (33 è il ritmo pieno)", tot.toFixed(1) + " ms", tot > 33 ? ROSSO : "#4caf6a"],
       ["Chi rallenta", tot < 33 ? "nessuno: gira a pieno ritmo"
-        : _pf.dis + _pf.mappa > _pf.sim ? "il disegno" : "il motore", null, true],
+        : _pf.dis + _pf.mappa + _pf.graf > _pf.sim ? "il disegno" : "il motore", null, true],
     ]);
   }
 
@@ -915,11 +934,11 @@ function nessunoVivo() {
 // requestAnimationFrame non si ferma se la scheda perde il focus (rAF viene throttlato).
 // Il tick è protetto: un errore non blocca più l'intera simulazione.
 // Quanto tempo se ne va, e dove. Media sugli ultimi battiti, non sul totale, così segue il presente.
-const _perf = { sim: 0, dis: 0, mappa: 0, n: 0 };
+const _perf = { sim: 0, dis: 0, mappa: 0, graf: 0, n: 0 };
 function perfLeggi() {
   if (!_perf.n) return null;
-  const r = { sim: _perf.sim / _perf.n, dis: _perf.dis / _perf.n, mappa: _perf.mappa / _perf.n, n: _perf.n };
-  if (_perf.n > 90) { _perf.sim = 0; _perf.dis = 0; _perf.mappa = 0; _perf.n = 0; }
+  const r = { sim: _perf.sim / _perf.n, dis: _perf.dis / _perf.n, mappa: _perf.mappa / _perf.n, graf: _perf.graf / _perf.n, n: _perf.n };
+  if (_perf.n > 90) { _perf.sim = 0; _perf.dis = 0; _perf.mappa = 0; _perf.graf = 0; _perf.n = 0; }
   return r;
 }
 
@@ -932,7 +951,10 @@ setInterval(() => {
     const _tA = performance.now();
     advance(0.033 * speed);
     const _tB = performance.now();
-    agentsRenderer.draw();
+    // NON SI DISEGNA UNA MAPPA CHE NESSUNO GUARDA. Con la storia aperta il canvas degli esseri e'
+    // nascosto, e disegnarci sopra migliaia di persone costava piu' di cento millisecondi a battito
+    // per pixel che nessuno vede — cioe' tempo rubato alla simulazione per niente.
+    if (schedaAttiva === "mappa") agentsRenderer.draw();
     const _tC = performance.now();
     _perf.sim += _tB - _tA; _perf.dis += _tC - _tB; _perf.n++;
     statTimer += 0.033;
@@ -944,7 +966,7 @@ setInterval(() => {
       population._cultDt = 0;
       updatePopStats(); renderBeliefs();
       const _tD = performance.now();
-      if (renderer.view === "inquinamento" || renderer.view === "scoperto" || renderer.view === "territorio" || renderer.view === "attivita") renderer.draw(); // viste dinamiche
+      if (schedaAttiva === "mappa" && (renderer.view === "inquinamento" || renderer.view === "scoperto" || renderer.view === "territorio" || renderer.view === "attivita")) renderer.draw(); // viste dinamiche
       _perf.mappa += performance.now() - _tD;
     }
     erroriDiSeguito = 0;                 // il giro è andato: si riparte da zero
@@ -1055,6 +1077,31 @@ $("waterPct").addEventListener("input", (e) => { $("waterPctOut").textContent = 
 // rallentare — molto più dei tetti sulla popolazione. In uno spazio fisso il doppio della gente
 // vuol dire il doppio dei vicini a testa, e il costo cresce col quadrato.
 $("dimMondo").addEventListener("input", (e) => { $("dimMondoVal").textContent = e.target.value; });
+// ---- LE DUE SCHEDE: dove sta il mondo, e da dove viene ----------------------------------------
+// I bottoni delle viste (Biomi, Rilievo, Clima...) sono della MAPPA: nella storia non vogliono dire
+// niente, quindi spariscono invece di restare li' a fingere di funzionare.
+function mostraScheda(quale) {
+  schedaAttiva = quale;
+  const storiaAperta = quale === "storia";
+  $("canvasWrap").classList.toggle("hidden", storiaAperta);
+  $("graficiWrap").classList.toggle("hidden", !storiaAperta);
+  $("viewModes").style.display = storiaAperta ? "none" : "";
+  [...$("schede").children].forEach((b) => b.classList.toggle("active", b.dataset.scheda === quale));
+  if (storiaAperta) {
+    if (!grafici) grafici = new Grafici($("graficiWrap"), () => storia, () => population);
+    grafici.disegna(true);
+  } else {
+    // Tornando alla mappa va ridimensionata: mentre era nascosta il canvas aveva larghezza zero.
+    renderer.resize();
+    renderer.draw();
+  }
+}
+$("schede").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-scheda]");
+  if (btn) mostraScheda(btn.dataset.scheda);
+});
+window.addEventListener("resize", () => { if (schedaAttiva === "storia" && grafici) grafici.disegna(true); });
+
 $("viewModes").addEventListener("click", (e) => {
   const btn = e.target.closest("button[data-view]");
   if (!btn) return;
