@@ -12,7 +12,7 @@ import { P, FAME_RECUPERO, FAME_DANNO } from "./params.js";
 import { mulberry32, hashSeed } from "./rng.js";
 import { foundingGenes, childGenes, skinRGB } from "./genetics.js";
 import { makeMaterial } from "./materials.js";
-import { nomeGenere, physiology, combine, analyze, classify, classifyCulturale, AFF, mixColor, simulate, inventName, fuse, signature, PROCESSES } from "./chemistry.js";
+import { nomeGenere, physiology, combine, analyze, classify, classifyCulturale, AFF, mixColor, simulate, inventName, fuse, signature, PROCESSES, SaperiGrezzi } from "./chemistry.js";
 import { maybeSpawnDisease } from "./animals.js";
 import { igniteFire } from "./fire.js";
 import { initEmotions } from "./emotions.js";
@@ -222,6 +222,9 @@ export class Population {
     this.registry = registry;
     this.knowledge = knowledge;
     this.npcs = [];
+    // QUEL CHE QUESTO POPOLO SA DI CIO' CHE SI RACCOGLIE DA TERRA (vedi `SaperiGrezzi`). Nasce
+    // vuoto: all'inizio non si sa niente, e si sospetta in base al sapore.
+    this.saperi = new SaperiGrezzi();
     this.food = new Float32Array(world.width * world.height);
     this.foodCap = new Float32Array(world.width * world.height);
     this.plankton = new Float32Array(world.width * world.height);   // cibo acquatico per i pesci
@@ -450,12 +453,24 @@ export class Population {
 
   // Il ritratto di una cosa, per come la vedrebbe chiunque: la parte del desiderio che non dipende
   // da chi la guarda.
+  // QUEL CHE SI CREDE DI UNA MATERIA, che non e' quel che la materia e'. Con `materieIgnote`
+  // spento torna la verita' nuda, cioe' l'onniscienza di prima.
+  credenzaSu(m) {
+    if (!P.materieIgnote) return physiology(m.props);
+    const c = this.saperi.stima(m, sapore(m.props));
+    return { nutrimento: c.nutre, beneficio: c.cura, danno: c.nuoce };
+  }
+
   ritrattoDi(m) {
     if (!this._ritratti) this._ritratti = new Map();
     let r = this._ritratti.get(m.id);
+    // Il ritratto si rinfresca quando il popolo impara: una cosa creduta veleno puo' diventare
+    // medicina, e da quel momento la si raccoglie invece di scansarla.
+    if (r !== undefined && P.materieIgnote && r._prove !== (this.saperi.per.get(m.id) || { prove: 0 }).prove) r = undefined;
     if (r === undefined) {
-      const ph = physiology(m.props);
+      const ph = this.credenzaSu(m);
       r = {
+        _prove: P.materieIgnote ? (this.saperi.per.get(m.id) || { prove: 0 }).prove : 0,
         nutre: ph.nutrimento, cura: ph.beneficio, nuoce: ph.danno,
         gusto: sapore(m.props), dissete: dissete(m.props),
         tiene: sazieta(m.props), ost: ostentabile(m),
@@ -1322,7 +1337,7 @@ export class Population {
         if (q <= 0) continue;
         const m = this.registry.mat(id);
         if (!m) continue;
-        const ph = physiology(m.props);
+        const ph = this.credenzaSu(m);      // si tiene quel che si crede prezioso, non quel che lo e'
         // quanto ci tiene: la solita voglia, meno quanto gli pesa portarselo
         const v = valuta(npc, {
           id: "m" + id, nutre: ph.nutrimento, cura: ph.beneficio, nuoce: ph.danno,
@@ -1701,7 +1716,9 @@ export class Population {
       if (!m.rinnovabile || m.sintetico) continue;        // si coglie solo ciò che ricresce
       const c = this.registry.concentrationAt(m.id, idx);
       if (c < 0.12) continue;
-      const ph = physiology(m.props);
+      // SI SCEGLIE CON QUEL CHE SI CREDE. La conseguenza, piu' sotto, usa la verita': la realta'
+      // non cambia a seconda di cosa uno pensa, ed e' proprio da questo scarto che si impara.
+      const ph = this.credenzaSu(m);
       if (ph.nutrimento < 0.03 && ph.beneficio < 0.1) continue;
       // Non si mastica l'aria. Che una cosa si possa mandare giù è fisica, non gusto — e quanto
       // valga la pena farlo è tutt'altra questione, che decide la fame.
@@ -1722,7 +1739,9 @@ export class Population {
       this.nutriDaVegetazione(npc, eaten * 1.5);
       return;
     }
+    // LA CONSEGUENZA E' VERA, sempre. Ed e' mangiandola che il popolo impara com'e' fatta davvero.
     const ph = physiology(best.props);
+    if (P.materieIgnote) this.saperi.impara(best, ph);
     const chiave = "m" + best.id;
     // QUANTO TI SFAMA. Prima c'era un 1,05 fisso: qualunque cosa passasse il filtro del
     // commestibile toglieva quasi la stessa fame, e il nutrimento contava poco. Ma sono due cose

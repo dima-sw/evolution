@@ -79,6 +79,23 @@ export const P = {
   // vera: dei 24 generi incontrati da piu' popoli, 24 su 24 hanno ricevuto nomi DIVERSI da ognuno.
   // Zero convergenze. Una stessa materia risponde a otto nomi a seconda di chi la incontra.
   // Metterlo a 0 riporta il motore a dire lui che cosa sia una cosa.
+  // SI CONOSCE CIO' CHE SI SENTE, NON CIO' CHE FA. Acceso, nessuno sa piu' in anticipo quanto una
+  // materia grezza nutra, curi o avveleni: la prima stima viene dal SAPORE (e l'amaro e' l'allarme
+  // del veleno, a volte esagerato e a volte muto), e la verita' si impara mangiando. Il sapere e'
+  // del popolo e si tramanda: e' la cucina di un posto. Spento, tutti sanno tutto dal primo istante
+  // — che e' l'onniscienza che il resto del progetto si vieta.
+  // ACCESO. Misurato (`banco/materie_ignote.mjs`, stesso seme, due partite): il mondo regge
+  // (1 629 vivi contro 1 581, salute 0,911 contro 0,917), non costa niente (46,2 contro 46,5 ms) e
+  // il popolo impara davvero — da 0 a 9 materie su 15. E nasce una storia che non e' in nessuna
+  // tabella: il PAPAVERO e' amaro 0,40, quindi viene scansato come veleno finche' qualcuno non lo
+  // prova, e da quel momento e' medicina.
+  //
+  // ⚠️ MA IL SAPORE E' UN ALLARME PERFETTO, e non dovrebbe esserlo. In `sapore()` l'amaro E' la
+  // tossicita', quindi un veleno insapore non puo' esistere: nessuno viene mai avvelenato di
+  // sorpresa. Meta' dell'emergenza voluta manca, e non per colpa di questa legge — per colpa di
+  // quell'uguaglianza. Perche' ci siano veleni insapori l'amaro dev'essere una proprieta' SUA,
+  // correlata alla tossicita' ma non identica: in natura l'allarme funziona spesso, non sempre.
+  materieIgnote: 1,
   affordanceTotale: 1, tempraSpenta: 0,
   // — LIMITI TECNICI —
   tettoPopolazione: 20000,
@@ -233,6 +250,7 @@ export const SCHEMA = [
     ["aiCostoAttacco", "Riluttanza ad attaccare", 0, 1.5, 0.05, "Quanta autorità serve per mandare la gente a combattere."],
   ]},
   { id: "regole", nome: "Regole del gioco", icona: "🔮", voci: [
+    ["materieIgnote", "Le materie vanno conosciute", 0, 1, 1, "Se acceso, nessuno sa in anticipo quanto una cosa raccolta da terra nutra, curi o avveleni: la prima stima viene dal SAPORE — e l'amaro è l'allarme del veleno, a volte esagerato e a volte muto — e la verità si impara mangiando, a proprie spese. Il sapere è del popolo e si tramanda: diventa la cucina di un posto. Spento, tutti sanno tutto dal primo istante."],
     ["affordanceTotale", "Categorie scoperte dai popoli", 0, 1, 1, "Se acceso, il motore smette di dire cosa sia una cosa: niente più Arma, Medicina, Veleno. Restano solo proprietà ed effetti, e OGNI POPOLO raggruppa e battezza a modo suo ciò che incontra — con nomi propri, che nessun altro usa. Il livello estremo dell'emergenza: spegnilo per tornare alle categorie note."],
   ]},
   { id: "limiti", nome: "Limiti tecnici", icona: "⚙️", voci: [

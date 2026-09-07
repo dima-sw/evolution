@@ -382,3 +382,57 @@ export class KnowledgeBase {
     return { belief: b, nuovo: true };
   }
 }
+
+// =================================================================================================
+// QUEL CHE SI SA DI CIO' CHE SI RACCOGLIE DA TERRA.
+//
+// Il progetto modella con cura ipotesi -> esperimento -> teoria per le COMBINAZIONI, e intanto
+// regalava la conoscenza perfetta di ogni materia grezza: `physiology(m.props)` diceva a chiunque,
+// dal primo istante e senza aver mai assaggiato niente, quanto una cosa nutre, cura o avvelena.
+// Era l'onniscienza cablata piu' grossa rimasta nel motore.
+//
+// La regola giusta e' una sola, e vale in qualunque mondo:
+//
+//     SI CONOSCE CIO' CHE SI SENTE, NON CIO' CHE FA.
+//
+// Il sapore lo senti in bocca: e' percezione, e ce l'hai subito. Il nutrimento, la cura e il
+// veleno sono CONSEGUENZE, e le conseguenze si imparano solo vivendole.
+//
+// La prima stima viene dunque da quel che la lingua dice — e la lingua dice l'amaro, che e'
+// l'allarme del veleno. Ma e' solo un allarme: una medicina amara verra' temuta finche' qualcuno
+// non la prova, e un veleno insapore verra' mangiato. Sono tutt'e due errori VERI, e nascono da
+// soli invece che da una tabella.
+//
+// Il sapere e' del POPOLO, non della singola persona: e' la cucina di un posto, e si tramanda.
+export class SaperiGrezzi {
+  constructor() { this.per = new Map(); }
+
+  // Che cosa crede questo popolo di quella materia. Se non l'ha mai provata, quel che sospetta.
+  stima(m, sap) {
+    const c = this.per.get(m.id);
+    if (c) return c;
+    const t = m.props.tossicita || 0;
+    return {
+      nutre: Math.max(0, sap) * 0.9,   // la lingua riconosce il cibo: densita', energia, sale, aroma
+      cura: 0,                          // che una cosa CURI non si vede in nessun modo: si scopre
+      nuoce: t,                         // l'amaro e' l'allarme — a volte esagerato, a volte muto
+      prove: 0, sospetto: true,
+    };
+  }
+
+  // Si e' mangiato, e si e' sentito l'effetto. La stima si sposta verso il vero, e piu' volte
+  // l'hai mangiata piu' ci si avvicina: e' una media che si affina, non un interruttore.
+  impara(m, vero) {
+    let c = this.per.get(m.id);
+    if (!c) { c = { nutre: 0, cura: 0, nuoce: 0, prove: 0, sospetto: false }; this.per.set(m.id, c); }
+    const peso = 1 / (c.prove + 1);
+    c.nutre += (vero.nutrimento - c.nutre) * peso;
+    c.cura += (vero.beneficio - c.cura) * peso;
+    c.nuoce += (vero.danno - c.nuoce) * peso;
+    c.prove++;
+    c.sospetto = false;
+    return c;
+  }
+
+  quante() { return this.per.size; }
+}

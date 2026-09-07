@@ -341,8 +341,13 @@ materiali che già esistono.
 - ⏳ domesticazione (colture come ceppo derivato dalle selvatiche); tossicità/resa come geni.
 
 ## PRIORITÀ 4 — conoscenza, cultura, informazione
-### 4.1 Quattro livelli della conoscenza  🔨 (base: ogni credenza ha un `livello` — ipotesi →
-  esperimento → teoria — che cresce con le prove; ⏳ osservazione passiva delle proprietà)
+### 4.1 Quattro livelli della conoscenza  ✅ (base: ogni credenza ha un `livello` — ipotesi →
+  esperimento → teoria — che cresce con le prove; ✅ osservazione passiva: `materieIgnote` — di una
+  materia grezza si conosce il SAPORE e si impara mangiandola quanto nutre, cura o avvelena. Prima
+  `physiology(m.props)` era nota a tutti dal primo istante.
+  ⏳ **quel che resta**: in `sapore()` l'amaro *è* la tossicità, quindi un veleno insapore non può
+  esistere e nessuno viene mai avvelenato di sorpresa. Perché l'inganno funzioni nei due versi
+  l'amaro dev'essere una proprietà sua, correlata alla tossicità ma non identica.)
 ### 4.2 Conoscenza parziale  ✅ (base)  Il sapere è per-firma (ferro grezzo ≠ ferro forgiato: ricette
   distinte). Si TRAMANDA ciò di cui si è sicuri: una "teoria" (molte prove) passa facile, una
   "ipotesi" incerta di rado → il sapere consolidato si diffonde, quello acerbo resta locale. ⏳

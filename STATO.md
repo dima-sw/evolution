@@ -140,6 +140,26 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **Nessuno sa più in anticipo che cosa faccia una materia grezza** (TODO 4.1 ⏳, «osservazione
+  passiva delle proprietà»). Il motore modellava con cura ipotesi → esperimento → teoria per le
+  *combinazioni*, e intanto **regalava a chiunque la conoscenza perfetta di tutto ciò che si
+  raccoglie da terra**: `physiology(m.props)` diceva dal primo istante quanto una cosa nutre, cura o
+  avvelena, senza averla mai assaggiata. Era l'onniscienza cablata più grossa rimasta.
+  La regola che la sostituisce è una sola: **si conosce ciò che si sente, non ciò che fa.** Il
+  sapore è percezione e ce l'hai subito; il nutrimento, la cura e il veleno sono *conseguenze*, e le
+  conseguenze si imparano vivendole. Si SCEGLIE con quel che si crede; la conseguenza usa la verità,
+  ed è da quello scarto che si impara. Il sapere è del popolo e si tramanda: è la cucina di un posto.
+  Misurato: il mondo regge (1 629 vivi contro 1 581, salute 0,911 contro 0,917), non costa niente
+  (46,2 contro 46,5 ms), e si impara davvero — da 0 a **9 materie su 15**. E nasce una storia che non
+  sta in nessuna tabella: il **papavero** è amaro, quindi scansato come veleno finché qualcuno non lo
+  prova, e da quel momento è medicina.
+
+  ⚠️ **E la misura ha trovato un'altra cosa cablata, che non ho risolto**: in `sapore()` l'amaro *è*
+  la tossicità, quindi **un veleno insapore non può esistere** e nessuno viene mai avvelenato di
+  sorpresa. Metà dell'inganno voluto manca, e non per colpa di questa legge ma di quell'uguaglianza.
+  Perché ci siano veleni insapori l'amaro dev'essere una proprietà **sua**, correlata alla tossicità
+  ma non identica — in natura l'allarme funziona spesso, non sempre.
+
 - **La caccia non rastrella più un mondo vuoto.** Il profilo diceva che una bestia costava dieci
   volte tanto quando la gente cresce — mentre le bestie *diminuivano*. Quattro ipotesi ovvie sono
   cadute misurandole (i cadaveri: 0,4%; le chiavi-stringa: costano uguale; il cibo introvabile: 0%
