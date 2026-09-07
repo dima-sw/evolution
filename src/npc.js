@@ -8,7 +8,7 @@ import { raggruppa, coortiDi, esitoScontro } from "./coorti.js";
 import { puo, stato, LIQUIDO, tieneLiquidi } from "./matter.js";
 import { bonus, perizia, tara, scorda } from "./skill.js";
 import { sapore, sazieta, dissete, valuta, assuefai, smaltisci, aggiornaBrama, brama, raro, riparoDi, qualitaCasa, splendoreDi, ostentabile } from "./desire.js";
-import { P } from "./params.js";
+import { P, FAME_RECUPERO, FAME_DANNO } from "./params.js";
 import { mulberry32, hashSeed } from "./rng.js";
 import { foundingGenes, childGenes, skinRGB } from "./genetics.js";
 import { makeMaterial } from "./materials.js";
@@ -867,8 +867,8 @@ export class Population {
       if (npc.cooldownFiglio > 0) npc.cooldownFiglio -= dt;
 
       // Salute: la fame estrema fa male; il cibo la recupera.
-      if (npc.fame > 1.0) npc.salute -= dt * P.dannoFame * (npc.fame - 1.0) * 10;
-      else if (npc.fame < 0.5) npc.salute = Math.min(1, npc.salute + dt * P.recuperoSalute);
+      if (npc.fame > FAME_DANNO) npc.salute -= dt * P.dannoFame * (npc.fame - FAME_DANNO) * 10;
+      else if (npc.fame < FAME_RECUPERO) npc.salute = Math.min(1, npc.salute + dt * P.recuperoSalute);
 
       // METABOLISMO (8.3): i gruppi nutritivi si consumano. Se uno resta a zero → CARENZA: la
       // salute non si rigenera e si deperisce (scorbuto/anemia emergenti). Mangiare vario paga.
@@ -910,7 +910,14 @@ export class Population {
 
       // Morte per fame/salute o vecchiaia (con un po' di varianza dai geni).
       const maxEta = P.longevitaBase + npc.genes.resistenza * P.longevitaGeni;
-      if (npc.salute <= 0 || npc.eta > maxEta) { npc.vivo = false; this.morti++; this.eredita(npc); continue; }
+      if (npc.salute <= 0 || npc.eta > maxEta) {
+        npc.vivo = false; this.morti++;
+        // MORIRE DA SERVO. Va contato QUI e non altrove: i morti vengono compattati via ogni tanto
+        // (poco piu' sotto), quindi guardando l'elenco dopo non se ne trova quasi nessuno — e si
+        // conclude che dalla servitu' si esce ribellandosi. Non e' vero: e' la meta' delle uscite.
+        if (npc._padrone != null) this.mortiDaServo = (this.mortiDaServo || 0) + 1;
+        this.eredita(npc); continue;
+      }
 
       // I cibi/materiali organici deperiscono nell'inventario; il mestiere emerge dalle azioni.
       if (this.rng() < 0.15) this.decayInventory(npc, dt * 6);

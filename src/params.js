@@ -1,3 +1,15 @@
+// I DUE PUNTI DELLA FAME CHE IL CORPO CONOSCE, e sono gli unici due che esistano davvero.
+// Sotto FAME_RECUPERO la salute si rimette; sopra FAME_DANNO il corpo comincia a consumarsi. In
+// mezzo c'e' chi non sta morendo ma non si sta nemmeno rimettendo — ed e' li' che uno diventa
+// disponibile a subire pur di mangiare.
+//
+// Stanno FUORI da `P` apposta: non sono manopole da girare, sono come e' fatto il corpo. E hanno
+// un nome perche' ALTRE leggi devono poterli chiedere invece di reinventarne di propri — la
+// sottomissione in `society.js` chiedeva `fame > 0.7`, un numero che non corrispondeva a niente,
+// e per questo non scattava mai.
+export const FAME_RECUPERO = 0.5;
+export const FAME_DANNO = 1.0;
+
 // ═══ PARAMETRI DEL MONDO ═════════════════════════════════════════════════════════════════════
 // Le "manopole" della simulazione, raccolte in un unico posto invece che sparse come costanti nei
 // moduli. Ogni voce ha un valore corrente (P), un valore PREDEFINITO BILANCIATO (DEF, la taratura

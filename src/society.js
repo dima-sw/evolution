@@ -1,4 +1,4 @@
-import { P } from "./params.js";
+import { P, FAME_RECUPERO } from "./params.js";
 import { bonus, perizia } from "./skill.js";
 import { piega } from "./tempra.js";
 import { qualitaCasa, brama, raro, splendoreDi, splendore } from "./desire.js";
@@ -169,7 +169,32 @@ function coercizione(pop, dt, vicini, zona) {
     for (const altro of vicini(npc)) {
       if (L) L.coercCandidati++;
       if (altro === npc || !altro.vivo || altro._padrone) continue;
-      const debole = altro.fame > 0.7 && altro.inventory.size === 0 && altro.forza < npc.forza && altro.coraggio < 0.5;
+      // NON UNA SOGLIA: UN CONFRONTO. Qui c'era `altro.fame > 0.7 && altro.coraggio < 0.5`, due
+      // numeri inventati — e misurando si è visto che la legge non scattava MAI, su otto semi e
+      // anche affamando il mondo dieci volte tanto (`banco/carestia.mjs`).
+      //
+      // Il difetto non era l'altezza della soglia: era che chiedeva una coincidenza a cinque nello
+      // stesso istante, e soprattutto confondeva «ha fame adesso» con «non ha alternative». La
+      // fame è un attimo — o mangi o muori, e in una fotografia non la vedi mai; la dipendenza è
+      // uno stato. Il lavoro forzato non nasce da una fitta di fame: nasce dal fatto che a uno
+      // conviene subire.
+      //
+      // Adesso sono quattro CONFRONTI, e nessun numero:
+      //   ha meno di lui       → anche questa è una relazione, non uno stato. Con
+      //                             `inventory.size === 0` la legge scattava, ma restava
+      //                             indifferente alla carestia: «essere a mani vuote» è un momento
+      //                             di passaggio fra una raccolta e l'altra, non una condizione
+      //                             che la fame del mondo produce (misurato: 86 a mani vuote
+      //                             nell'abbondanza, 52 in carestia — CALA)
+      //   il corpo non si rimette → sopra `FAME_RECUPERO` la salute smette di risalire. Non è una
+      //                             soglia nuova: è quella che il CORPO usa già in `npc.js`, e
+      //                             chiederla a lui invece di inventarne una è tutta la differenza
+      //   ha più fame di lui   → è LUI che può sfamarlo, ed è qui che nasce la dipendenza
+      //   è più debole         → non può opporsi con la forza
+      //   il coraggio non regge l'aggressività dell'altro → né con l'animo
+      const debole = altro.inventory.size < npc.inventory.size
+        && altro.fame > FAME_RECUPERO && altro.fame > npc.fame
+        && altro.forza < npc.forza && altro.coraggio < npc.aggressivita;
       if (!debole) continue;
       altro._padrone = npc.id;                       // relazione di dipendenza
       altro.emo.lealta = clamp01(altro.emo.lealta - 0.2);
@@ -181,15 +206,56 @@ function coercizione(pop, dt, vicini, zona) {
     cro.ms["coerc·prendere"] += performance.now();
     cro.ms["coerc·servi"] = (cro.ms["coerc·servi"] || 0) - performance.now();
   }
-  // Il sottomesso lavora per il padrone (gli passa ciò che raccoglie) e riceve di che sopravvivere.
+  // IL PATTO, CHE PRIMA NON C'ERA. Il commento diceva «gli passa ciò che raccoglie e riceve di che
+  // sopravvivere», e «si libera se il padrone muore»: nessuna delle tre cose accadeva. Non c'era
+  // nessun trasferimento — il servo mangiava la propria roba e il padrone non riceveva niente — e
+  // il padrone morto teneva il suo servo per sempre, perché quel controllo non esisteva. Era
+  // un'etichetta appiccicata addosso, non una relazione.
+  //
+  // E la porta era a SENSO UNICO per costruzione: ci si liberava con `coraggio > 0.5`, ma la
+  // sottomissione sceglie apposta chi ha poco coraggio. Misurato: 448 sottomessi, 46 liberati.
+  // Un terzo del popolo servo alla fine di ogni partita, e nessuna via d'uscita.
+  const perId = new Map();
+  for (const n of pop.npcs) if (n.vivo) perId.set(n.id, n);
   for (const npc of pop.npcs) {
-    if (!npc.vivo || !npc._padrone) continue;
+    if (!npc.vivo || npc._padrone == null) continue;
+    const padrone = perId.get(npc._padrone);
+    // IL MORTO NON COMANDA NESSUNO — ed è la via d'uscita principale, non un caso di margine.
+    // Misurato: su 427 sottomessi, 27 si ribellano, 2 muoiono da servi, e QUASI QUATTROCENTO
+    // tornano liberi perché il padrone è morto. La servitù non finisce con una rivolta: finisce
+    // con un funerale. Va contata, o si guarda il mondo con un buco in mezzo.
+    if (!padrone) {
+      npc._padrone = undefined;
+      npc.malcontento = clamp01(npc.malcontento - 0.3);
+      pop.orfaniDiPadrone = (pop.orfaniDiPadrone || 0) + 1;
+      continue;
+    }
     if (L) L.servi++;
-    npc.malcontento = clamp01(npc.malcontento + dt * 0.1);
-    // si libera se il padrone muore, se trova coraggio, o se il malcontento esplode
-    if (npc.malcontento > 0.8 && npc.coraggio > 0.5 && pop.rng() < dt * 0.5) { npc._padrone = null; npc.ribelle = true; }
-    else if (pop.rng() < dt * 0.3) {
-      for (const [id, q] of npc.inventory) { if (q > 0) { npc.inventory.set(id, q - 1); npc.fame = Math.max(0, npc.fame - 0.2); break; } }
+    // LO SCAMBIO. Il servo dà ciò che ha; in cambio riceve da mangiare — se il padrone gliene dà.
+    // È tutto qui il patto, e se una delle due metà non avviene la relazione non ha più ragione.
+    let hadato = false;
+    for (const [id, q] of npc.inventory) {
+      if (q > 0) { npc.inventory.set(id, q - 1); padrone.addMat(id, 1); hadato = true; break; }
+    }
+    let haavuto = false;
+    // Il padrone sfama chi lavora per lui quanto gli conviene: se è avido e senza pietà, il minimo.
+    if (padrone.inventory.size && pop.rng() < 0.3 + padrone.empatia * 0.6 - padrone.avidita * 0.3) {
+      for (const [id, q] of padrone.inventory) {
+        if (q > 0) { padrone.inventory.set(id, q - 1); npc.addMat(id, 1); haavuto = true; break; }
+      }
+    }
+    // IL MALCONTENTO NASCE DA COM'È IL PATTO, non dal passare del tempo: dare e non ricevere brucia,
+    // ricevere davvero calma. Prima cresceva comunque, e cresceva per tutti allo stesso modo.
+    npc.malcontento = clamp01(npc.malcontento + dt * (hadato && !haavuto ? 0.22 : haavuto ? -0.12 : 0.06));
+    // CI SI LIBERA QUANDO IL RANCORE SUPERA LA PAURA. Un confronto, non due soglie — ed è lo
+    // specchio della cattura, che confrontava il coraggio del debole con l'aggressività del forte.
+    if (npc.malcontento > npc.emo.paura && pop.rng() < dt * (0.2 + npc.coraggio)) {
+      npc._padrone = undefined; npc.ribelle = true;
+      npc.memoria.set(padrone.id, Math.max(-1, (npc.memoria.get(padrone.id) || 0) - 0.4));
+      // NON `pop.ribelli`: quello lo riscrive `emotions.js` a ogni passo con quanti ribelli ci
+      // sono ADESSO — e' una fotografia, non un totale. Sommarci dentro non fa danno al mondo, ma
+      // il numero sparisce al passo successivo, e chi lo legge crede di contare le liberazioni.
+      pop.liberatisi = (pop.liberatisi || 0) + 1;
     }
   }
   if (cro) cro.ms["coerc·servi"] += performance.now();
@@ -481,7 +547,11 @@ export function stepSocietyAdvanced(pop, dt) {
         if (!dentro(c, r)) continue;
         const k = idCella(c, r);
         if (n.fame >= 0.6) indigenti[k]++;
-        if (n.fame > 0.7 && n.coraggio < 0.5 && !n._padrone) disperati[k]++;
+        // Per la sottomissione si contano solo le condizioni INDIVIDUALI: «ha più fame di lui» e
+        // «il suo coraggio non regge la sua aggressività» sono confronti di coppia, e su una
+        // persona sola non si possono decidere. Contarne meno renderebbe il conto una sottostima,
+        // che è il verso pericoloso; contarne di più lo lascia un limite superiore, che è innocuo.
+        if (!n._padrone) disperati[k]++;
       }
     },
     nessuno(conteggio, n) {

@@ -140,6 +140,43 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **Il lavoro forzato adesso esiste, e prima no.** Su otto semi `costretti` era **zero**: una legge
+  scritta che non produceva niente. La causa non era quella che sembrava, e c'è voluta una catena di
+  misure per arrivarci — ognuna ha smentito la precedente.
+  1. «Nessuno arriva a `fame > 0.7`» era un **artefatto della fotografia finale**: chi ha fame o
+     mangia o muore, quindi in un'istantanea non lo vedi mai. Contando gli *episodi*, la fame supera
+     0,7 centoquaranta volte a partita e tocca 1,40.
+  2. Il muro vero era che la legge chiedeva una **coincidenza a cinque** nello stesso istante, e
+     confondeva «ha fame adesso» con «non ha alternative». La dipendenza è uno stato, la fame un
+     attimo.
+  3. Rese comparative le condizioni, scattava ma **restava indifferente alla carestia** (207 in
+     abbondanza, 200 con dieci volte meno cibo). Il collo era `inventory.size === 0`: essere a mani
+     vuote è un momento di passaggio, non una condizione che la fame del mondo produce — misurato,
+     *cala* sotto carestia (86 → 52).
+  4. Resa comparativa anche la povertà, e aggiunto l'unico assoluto che non sia inventato — il punto
+     in cui il corpo smette di rimettersi, `FAME_RECUPERO`, che `npc.js` usava già — la servitù
+     **risponde al mondo**: dal 17,1% della gente in abbondanza al 19,8% in carestia.
+
+  E la relazione stessa non esisteva: il commento diceva «gli passa ciò che raccoglie e riceve di
+  che sopravvivere» e «si libera se il padrone muore», e **nessuna delle tre cose accadeva**. Il
+  servo mangiava la propria roba, il padrone non riceveva niente, e un padrone morto teneva il suo
+  servo per sempre. Ora lo scambio avviene, il malcontento nasce da com'è il patto (dare e non
+  ricevere brucia, ricevere calma) e ci si libera **quando il rancore supera la paura** — lo
+  specchio della cattura, che confronta il coraggio del debole con l'aggressività del forte. Al
+  posto di `malcontento > 0.8 && coraggio > 0.5`, che era una porta murata per gente scelta apposta
+  perché coraggio non ne ha.
+
+  Il conto delle uscite chiude: **entrati 544 = ribellati 250 + orfani del padrone 37 + morti da
+  servi 22 + ancora servi 235.** Dalla dipendenza si esce ribellandosi (46%) o non se ne esce (43%).
+
+- **Tre errori di contatore in una sera, tutti della stessa forma.** Un `Proxy` per contare il
+  lavoro che misurava se stesso; uno `stderr` mandato a `/dev/null` che ha fatto confrontare un file
+  vuoto con otto righe; e `pop.ribelli`, che **`emotions.js` riscrive a ogni passo** con quanti
+  ribelli ci sono adesso — sommarci dentro le liberazioni faceva sparire il numero al passo
+  successivo. La regola che ne esce: *un totale che non torna è l'unico modo affidabile per scoprire
+  un meccanismo che non sai di avere*, e per questo `banco/carestia.mjs` adesso stampa la
+  quadratura esplicita invece di lasciarla dedurre.
+
 - **La prova ora vale su otto semi, non su uno.** Si ricostruisce il motore *di prima* — una copia
   dei sorgenti con le ottimizzazioni tolte — e si confrontano diciotto grandezze su otto partite
   diverse (`banco/multiseme.mjs`). **Nessuna differenza.** Era il difetto più serio del metodo: una
