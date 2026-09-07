@@ -1,0 +1,10 @@
+# Le chiavi dei provider: MAI nel repo. Il modello di riferimento sta in .env.example.
+.env
+.env.local
+
+# Uscite del banco di prova: si rigenerano, e cambiano a ogni giro
+scala*.txt
+banco/*.txt
+
+node_modules/
+.DS_Store

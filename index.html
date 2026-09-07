@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Evolution — Simulatore di civiltà</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══ SINISTRA: TUTTO CIÒ CHE IL MONDO STA FACENDO ═══ -->
+    <aside id="sidebarLeft" class="sidebar">
+      <header class="brand">
+        <h1>Evolution</h1>
+        <span class="tag">Osservazione del mondo</span>
+      </header>
+      <div class="sidebar-tools">
+        <input id="infoFiltro" type="search" placeholder="cerca un dato…" />
+        <button id="infoEspandi" class="ghost" title="Espandi tutto">⊕</button>
+        <button id="infoComprimi" class="ghost" title="Comprimi tutto">⊖</button>
+      </div>
+
+      <details class="sez" open><summary>🔍 Osservatorio</summary>
+        <div class="sez-body"><div id="scheda"><p class="hint">Clicca su un essere per osservarlo. Rotella per zoomare, trascina per spostarti.</p></div></div>
+      </details>
+
+      <details class="sez"><summary>⏱ Ritmo e prestazioni</summary>
+        <div class="sez-body"><div id="perfStats" class="pop-stats"></div>
+        <p class="hint">Quanto dura ogni battito, diviso fra il motore e il disegno. Se la somma
+          supera 33 ms il mondo non tiene il ritmo pieno — e qui si vede <b>chi</b> dei due rallenta.</p></div>
+      </details>
+
+      <details class="sez" open><summary>👥 Popolazione</summary>
+        <div class="sez-body"><div id="popStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>🩺 Corpo e salute</summary>
+        <div class="sez-body"><div id="corpoStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>🌦 Cielo, clima e stagioni</summary>
+        <div class="sez-body"><div id="climaStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>🌋 Geologia e catastrofi</summary>
+        <div class="sez-body"><div id="geoStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>🦌 Ecosistema e territorio</summary>
+        <div class="sez-body"><div id="ecoStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>☣ Malattie ed epidemie</summary>
+        <div class="sez-body"><div id="malStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>🫂 Società e sentimenti</summary>
+        <div class="sez-body"><div id="socStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez" open><summary>🧬 Vite e gruppi</summary>
+        <div class="sez-body">
+          <div id="viteStats" class="pop-stats"></div>
+          <div id="viteListe" class="mini-liste"></div>
+          <p class="hint">I <b>geni</b> restano quelli della nascita — i figli ereditano da quelli.
+            Quello che cambia è la <b>persona</b>: chi si sfianca senza frutto smette di volere, chi
+            vive nel timore perde il coraggio, chi è a lungo obbedito monta in superbia e smette di
+            capire gli altri. Quando la pressione cessa, si torna piano verso sé stessi.</p>
+        </div>
+      </details>
+
+      <details class="sez" open><summary>🍽 Gusti, avversioni e case <span id="gustiCount" class="conta">—</span></summary>
+        <div class="sez-body">
+          <div id="gustiStats" class="pop-stats"></div>
+          <div id="gustiListe" class="mini-liste"></div>
+        </div>
+      </details>
+
+      <details class="sez"><summary>⚖️ Istituzioni emergenti</summary>
+        <div class="sez-body"><div id="istStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez"><summary>💡 Conoscenza e tecnologia</summary>
+        <div class="sez-body"><div id="conStats" class="pop-stats"></div></div>
+      </details>
+
+      <details class="sez" open><summary>🏳️ Popoli <span id="facCount" class="conta">0</span></summary>
+        <div class="sez-body">
+          <p class="hint">Cluster del grafo sociale: nessun livello prestabilito, solo gruppi che si legano o si spezzano.</p>
+          <ul id="facList" class="mat-list"></ul>
+        </div>
+      </details>
+
+      <details class="sez"><summary>🎭 Cultura e religione <span id="cultCount" class="conta">0</span></summary>
+        <div class="sez-body">
+          <p class="hint">Memi e fedi si diffondono per rete sociale, senza confini.</p>
+          <ul id="cultList" class="mat-list"></ul>
+        </div>
+      </details>
+
+      <details class="sez" open><summary>🧠 Menti al potere <span id="aiState" class="conta">spenta</span></summary>
+        <div class="sez-body">
+          <p class="hint">Un LLM impersona il capo di ogni popolo grande. Vede solo ciò che il suo popolo sa; i suoi ordini sono <b>influenza</b>, non comandi.</p>
+          <div class="row">
+            <button id="aiToggle" class="primary">🧠 Accendi le menti</button>
+            <button id="aiPing" class="ghost">Prova provider</button>
+          </div>
+          <div id="aiStats" class="pop-stats"></div>
+          <ul id="aiGov" class="mat-list"></ul>
+          <h3 class="mini">Diario del potere</h3>
+          <ul id="aiLog" class="cron-list"></ul>
+        </div>
+      </details>
+
+      <details class="sez" open><summary>🌐 Istituzioni inventate <span id="entCount" class="conta">0</span></summary>
+        <div class="sez-body">
+          <p class="hint">Il livello più astratto: per il motore <b>tutto è un'entità</b> — fedi, mestieri, norme, tecniche, luoghi. Chi ha ingegno ne combina due e ne ottiene una <b>categoria nuova</b>, che il motore non conosce. Sopravvive solo se a chi la pratica conviene davvero.</p>
+          <div id="entStats" class="pop-stats"></div>
+          <ul id="entList" class="mat-list"></ul>
+        </div>
+      </details>
+
+      <details class="sez" open><summary>📜 Cronache <span id="cronCount" class="conta">0</span></summary>
+        <div class="sez-body"><ul id="cronList" class="cron-list"></ul></div>
+      </details>
+
+      <details class="sez"><summary>🔬 Conoscenze scoperte <span id="knowCount" class="conta">0</span></summary>
+        <div class="sez-body"><ul id="objList" class="mat-list"></ul></div>
+      </details>
+    </aside>
+
+    <!-- ═══ CENTRO: IL MONDO ═══ -->
+    <main id="stage">
+      <div id="topbar">
+        <div class="tb-group">
+          <button id="playBtn" class="primary">▶ Avvia</button>
+          <button id="stepBtn" class="ghost">⏭ Passo</button>
+          <label class="tb-slider" title="Velocità della simulazione">
+            <input id="simSpeed" type="range" min="1" max="20" value="8" />
+            <output id="simSpeedOut">8</output>×
+          </label>
+        </div>
+        <div class="tb-group segmented" id="viewModes">
+          <button data-view="biome" class="active">Biomi</button>
+          <button data-view="territorio">Territorio</button>
+          <button data-view="elevation">Rilievo</button>
+          <button data-view="temperature">Clima</button>
+          <button data-view="regioni">Popoli</button>
+          <button data-view="inquinamento">Impatto</button>
+          <button data-view="attivita">Attività</button>
+          <button data-view="scoperto">Esplorato</button>
+        </div>
+        <div class="tb-group">
+          <button id="zoomOut" class="ghost">−</button>
+          <span id="zoomLabel" class="zoomlbl">3.0×</span>
+          <button id="zoomIn" class="ghost">+</button>
+          <button id="zoomFit" class="ghost">Tutto</button>
+          <button id="zoomCapo" class="ghost">Segui il popolo</button>
+        </div>
+      </div>
+      <div id="canvasWrap">
+        <canvas id="world"></canvas>
+        <canvas id="agents"></canvas>
+        <div id="tooltip" class="tooltip hidden"></div>
+        <div id="legenda" class="legenda hidden"></div>
+      </div>
+      <div id="status" class="status">Pronto.</div>
+    </main>
+
+    <!-- ═══ DESTRA: TUTTE LE MANOPOLE ═══ -->
+    <aside id="sidebarRight" class="sidebar">
+      <header class="brand">
+        <h1>Parametri</h1>
+        <span class="tag">Le leggi del mondo, regolabili</span>
+      </header>
+      <div class="sidebar-tools">
+        <input id="paramFiltro" type="search" placeholder="cerca un parametro…" />
+        <button id="paramReset" class="ghost danger" title="Ripristina tutti i valori bilanciati">↺ Tutto</button>
+      </div>
+      <p class="hint" id="paramInfo">Ogni manopola sposta un <b>equilibrio</b>, non aggiunge regole: il resto emerge da sé. I valori predefiniti sono quelli bilanciati sui test.</p>
+
+      <details class="sez" open><summary>🌍 Generazione del mondo</summary>
+        <div class="sez-body">
+          <label class="row"><span>Seed</span>
+            <input id="seed" type="text" value="terra" />
+            <button id="randomSeed" class="ghost" title="Seed casuale">🎲</button>
+          </label>
+          <label class="row"><span>Larghezza del mondo</span>
+            <input id="dimMondo" type="range" min="192" max="640" step="32" value="320" />
+            <output id="dimMondoVal">320</output>
+          </label>
+          <p class="hint">Più grande = più gente e più bestie alla <b>stessa densità</b>, quindi allo
+            stesso costo a testa. È questo — non i tetti — a decidere quanto può crescere un mondo:
+            in uno spazio fisso il doppio della gente vuol dire il doppio dei vicini a testa, e il
+            costo cresce col quadrato.</p>
+          <label class="row"><span>Acqua %</span>
+            <input id="waterPct" type="range" min="40" max="90" value="70" />
+            <output id="waterPctOut">70</output>
+          </label>
+          <label class="row"><span>Abitanti iniziali</span>
+            <input id="popStart" type="range" min="10" max="400" value="120" />
+            <output id="popStartOut">120</output>
+          </label>
+          <label class="row"><span>Erbivori</span>
+            <input id="herbStart" type="range" min="0" max="600" value="150" />
+            <output id="herbStartOut">150</output>
+          </label>
+          <label class="row"><span>Predatori</span>
+            <input id="predStart" type="range" min="0" max="200" value="20" />
+            <output id="predStartOut">20</output>
+          </label>
+          <div class="row buttons">
+            <button id="regen" class="primary">Rigenera mondo</button>
+            <button id="resetPop" class="ghost">Ripopola</button>
+          </div>
+          <div class="row buttons">
+            <button id="respawnAnimals" class="ghost">Fauna</button>
+            <button id="outbreak" class="ghost">☣ Epidemia</button>
+            <button id="sparkFire" class="ghost">🔥 Incendio</button>
+          </div>
+        </div>
+      </details>
+
+      <!-- i gruppi di parametri sono generati da params.js -->
+      <div id="paramGroups"></div>
+
+      <details class="sez"><summary>🧱 Materiali del mondo <span id="matCount" class="conta">0</span></summary>
+        <div class="sez-body">
+          <p class="hint">Clicca un materiale per vederne i giacimenti sulla mappa.</p>
+          <div class="row buttons"><button id="addMatBtn" class="ghost">+ Aggiungi materiale</button></div>
+          <ul id="matList" class="mat-list"></ul>
+        </div>
+      </details>
+
+      <details class="sez"><summary>⚗️ Laboratorio</summary>
+        <div class="sez-body">
+          <p class="hint">Combina materiali: categoria, stabilità ed effetti emergono dagli attributi. Nessuna ricetta.</p>
+          <div id="labRows"></div>
+          <div class="row buttons"><button id="addIng" class="ghost">+ Ingrediente</button></div>
+          <label class="row"><span>Processo</span><select id="labProc"></select></label>
+          <div id="labResult" class="lab-result empty"></div>
+          <div class="row buttons"><button id="discover" class="primary" disabled>Prova esperimento</button></div>
+        </div>
+      </details>
+    </aside>
+  </div>
+
+  <!-- Modal: nuovo materiale -->
+  <div id="matModal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Nuovo materiale</h2>
+      <p class="hint">Definisci solo le proprietà FONDAMENTALI: il resto (categoria, usi, valore) lo scopriranno gli esseri viventi.</p>
+      <label class="row"><span>Nome</span><input id="mNome" type="text" /></label>
+      <label class="row"><span>Descrizione</span><input id="mDesc" type="text" /></label>
+      <label class="row"><span>Rarità</span>
+        <select id="mRarita"><option>comune</option><option>frequente</option><option selected>raro</option><option>rarissimo</option></select>
+      </label>
+      <label class="row"><span>Ambiente</span>
+        <select id="mAmbiente"><option value="terra">terra</option><option value="acqua">acqua</option><option value="entrambi">entrambi</option></select>
+      </label>
+      <label class="row"><span>Colore</span><input id="mColore" type="color" value="#e0a030" /></label>
+      <div id="mProps" class="props-grid"></div>
+      <div class="row buttons">
+        <button id="mAnnulla" class="ghost">Annulla</button>
+        <button id="mSalva" class="primary">Crea</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
