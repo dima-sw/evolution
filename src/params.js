@@ -72,7 +72,14 @@ export const P = {
   aiSogliaStato: 25, aiIntervallo: 6, aiParallele: 2, aiTemperatura: 0.55,
   aiCostoAttacco: 0.45, aiCostoMigrazione: 0.35, aiPesoLealta: 0.45, aiPesoPaura: 0.25,
   // — REGOLE DEL GIOCO —
-  affordanceTotale: 0, tempraSpenta: 0,
+  // ACCESO DI DEFAULT, e non per gusto: misurato (`banco/affordanza.mjs`, stesso seme, stessa
+  // partita). Il mondo regge (1 252 vivi contro 1 283, 142 morti contro 152: lo stesso mondo entro
+  // il rumore), costa MENO (32,2 contro 37,0 ms — cercare un genere gia' percepito in una mappa e'
+  // piu' economico che dare un punteggio a tutte le categorie note), e soprattutto la divergenza e'
+  // vera: dei 24 generi incontrati da piu' popoli, 24 su 24 hanno ricevuto nomi DIVERSI da ognuno.
+  // Zero convergenze. Una stessa materia risponde a otto nomi a seconda di chi la incontra.
+  // Metterlo a 0 riporta il motore a dire lui che cosa sia una cosa.
+  affordanceTotale: 1, tempraSpenta: 0,
   // — LIMITI TECNICI —
   tettoPopolazione: 20000,
 };

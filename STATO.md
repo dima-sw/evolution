@@ -140,6 +140,21 @@ Quattro livelli soltanto si possono scrivere a mano:
   costruiva una stringa (`"12,7"`) e la sminuzzava per l'hash, decine di volte per persona. Più i
   due elenchi della ricerca dei vicini riusati invece che riallocati per ognuno, e l'adiacenza in un
   array indicizzato invece che in una `Map` con chiave-oggetto.
+- **`affordanceTotale` è ACCESO di default: il motore ha smesso di dire che cosa siano le cose.**
+  Era implementato da tempo ma spento, e non era mai stato provato per una partita intera. Misurato
+  (`banco/affordanza.mjs`, stesso seme, due partite):
+  - **il mondo regge** — 1 252 vivi contro 1 283, 142 morti contro 152: lo stesso mondo entro il rumore;
+  - **costa meno** — 32,2 contro 37,0 ms per battito: cercare un genere già percepito in una mappa
+    è più economico che dare un punteggio a tutte le categorie note;
+  - **la divergenza è vera** — dei 24 generi incontrati da più popoli, **24 su 24** hanno ricevuto
+    nomi diversi da ognuno. Zero convergenze. Una stessa materia risponde a otto nomi a seconda di
+    chi la incontra (`Cukaco / Lotapi / Fuleze / Bakufu / Sofevu / Zagiso / Sirama / Nagune`).
+
+  Era l'obiezione seria: se i popoli convergessero tutti sugli stessi generi, sarebbero le solite
+  categorie con un vestito nuovo. Non convergono mai. Nel gioco il pannello dei mestieri adesso dice
+  `Maniko ×17 · Zununa ×16 · Rupedi ×12 · Tideva ×11 …` — sessanta mestieri inventati, e nessuno di
+  quei nomi, né le categorie che nominano, sta nel codice.
+
 - **Il lavoro forzato adesso esiste, e prima no.** Su otto semi `costretti` era **zero**: una legge
   scritta che non produceva niente. La causa non era quella che sembrava, e c'è voluta una catena di
   misure per arrivarci — ognuna ha smentito la precedente.
